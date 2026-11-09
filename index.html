@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<title>삼천리자전거 비산점 - 업무일지</title>
+<style>
+:root {
+  --primary: #0d9488;
+  --primary-dark: #0f766e;
+  --primary-light: #ccfbf1;
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --border: #e2e8f0;
+  --text: #1e293b;
+  --text-light: #64748b;
+  --success: #16a34a;
+  --danger: #dc2626;
+  --warning: #f59e0b;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Malgun Gothic', '맑은 고딕', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+
+.nav { background: var(--primary); color: white; padding: 0; display: flex; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+.nav-brand { padding: 12px 20px; font-size: 16px; font-weight: 700; white-space: nowrap; border-right: 1px solid rgba(255,255,255,0.2); }
+.nav-tabs { display: flex; flex: 1; }
+.nav-tab { padding: 14px 24px; cursor: pointer; font-size: 14px; transition: background 0.2s; border: none; background: none; color: rgba(255,255,255,0.8); font-family: inherit; }
+.nav-tab:hover { background: rgba(255,255,255,0.1); color: white; }
+.nav-tab.active { background: rgba(255,255,255,0.2); color: white; font-weight: 600; }
+
+.container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+.page { display: none; }
+.page.active { display: block; }
+
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.card-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid var(--primary); }
+.card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid var(--primary); }
+.card-header .card-title { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+
+.form-row { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+.form-group { display: flex; flex-direction: column; gap: 4px; }
+.form-group.flex1 { flex: 1; min-width: 150px; }
+.form-group label { font-size: 12px; font-weight: 600; color: var(--text-light); }
+.form-group input, .form-group select, .form-group textarea {
+  padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: 14px; font-family: inherit; transition: border-color 0.2s;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(13,148,136,0.1); }
+.form-group textarea { resize: vertical; min-height: 80px; }
+
+.btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; font-family: inherit; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-success { background: var(--success); color: white; }
+.btn-success:hover { background: #15803d; }
+.btn-danger { background: var(--danger); color: white; }
+.btn-danger:hover { background: #b91c1c; }
+.btn-outline { background: white; color: var(--text); border: 1px solid var(--border); }
+.btn-outline:hover { background: var(--bg); }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+.btn-lg { padding: 12px 24px; font-size: 15px; }
+.btn-warning { background: var(--warning); color: white; }
+.btn-warning:hover { background: #d97706; }
+
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+th { background: #f1f5f9; font-weight: 600; font-size: 12px; color: var(--text-light); text-transform: uppercase; position: sticky; top: 0; }
+tr:hover { background: #f8fafc; }
+.text-right { text-align: right; }
+.text-center { text-align: center; }
+
+.search-box { display: flex; gap: 12px; margin-bottom: 16px; align-items: center; }
+.search-box input { flex: 1; padding: 10px 14px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; font-family: inherit; }
+.search-box input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(13,148,136,0.1); }
+.search-box select { padding: 10px 14px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; font-family: inherit; }
+
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px; }
+.stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 20px; text-align: center; }
+.stat-value { font-size: 28px; font-weight: 700; color: var(--primary); }
+.stat-label { font-size: 12px; color: var(--text-light); margin-top: 4px; }
+
+.badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+.badge-purchase { background: #dbeafe; color: #1d4ed8; }
+.badge-repair { background: #fef3c7; color: #92400e; }
+.badge-consult { background: #d1fae5; color: #065f46; }
+.badge-pickup { background: #ede9fe; color: #5b21b6; }
+.badge-other { background: #f1f5f9; color: #475569; }
+
+.badge-cash { background: #d1fae5; color: #065f46; }
+.badge-card { background: #dbeafe; color: #1d4ed8; }
+.badge-transfer { background: #fef3c7; color: #92400e; }
+
+.empty-state { text-align: center; padding: 40px; color: var(--text-light); }
+.empty-state p { font-size: 15px; }
+
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 200; justify-content: center; align-items: center; }
+.modal-overlay.active { display: flex; }
+.modal { background: white; border-radius: 12px; padding: 24px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
+.modal-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+
+.filter-row { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+.filter-row label { font-size: 13px; font-weight: 600; color: var(--text-light); }
+.filter-row input, .filter-row select { padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; font-family: inherit; }
+
+.table-wrap { overflow-x: auto; }
+
+.daily-entry { border-left: 3px solid var(--primary); padding: 12px 16px; margin-bottom: 12px; background: #f8fafc; border-radius: 0 8px 8px 0; }
+.daily-entry-date { font-weight: 700; color: var(--primary); margin-bottom: 4px; }
+.daily-entry-content { color: var(--text); white-space: pre-wrap; }
+.daily-entry-actions { margin-top: 8px; }
+
+.toolbar { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.attached-cust-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.attached-cust-tag { display: inline-flex; align-items: center; gap: 6px; background: var(--primary-light); border: 1px solid #99f6e4; border-radius: 20px; padding: 4px 12px; font-size: 13px; }
+.attached-cust-tag .remove-tag { cursor: pointer; color: var(--danger); font-weight: 700; font-size: 14px; line-height: 1; }
+.attached-cust-tag .remove-tag:hover { color: #991b1b; }
+.journal-customers { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+.journal-cust-badge { display: inline-block; background: var(--primary-light); border-radius: 12px; padding: 2px 10px; font-size: 12px; color: var(--primary-dark); }
+</style>
+</head>
+<body>
+
+<!-- 비밀번호 화면 -->
+<div id="lock-screen" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:var(--bg); z-index:999; display:flex; justify-content:center; align-items:center;">
+  <div class="card" style="width:360px; text-align:center;">
+    <div style="font-size:40px; margin-bottom:12px;">🚲</div>
+    <div style="font-size:20px; font-weight:700; margin-bottom:4px;">삼천리자전거 비산점</div>
+    <div id="lock-subtitle" style="color:var(--text-light); margin-bottom:20px;">업무일지 시스템</div>
+    <div id="lock-setup" style="display:none;">
+      <p style="margin-bottom:12px; font-size:13px; color:var(--text-light);">처음 사용입니다. 관리자 비밀번호를 설정하세요.</p>
+      <div class="form-group" style="margin-bottom:12px;"><input type="password" id="pw-new" placeholder="비밀번호 (4자 이상)" style="width:100%; text-align:center; font-size:16px; padding:12px;"></div>
+      <div class="form-group" style="margin-bottom:16px;"><input type="password" id="pw-confirm" placeholder="비밀번호 확인" style="width:100%; text-align:center; font-size:16px; padding:12px;"></div>
+      <button class="btn btn-primary btn-lg" style="width:100%;" onclick="setupPassword()">설정 완료</button>
+    </div>
+    <div id="lock-login" style="display:none;">
+      <div class="form-group" style="margin-bottom:16px;"><input type="password" id="pw-input" placeholder="비밀번호 입력" style="width:100%; text-align:center; font-size:16px; padding:12px;" onkeydown="if(event.key==='Enter')unlock()"></div>
+      <button class="btn btn-primary btn-lg" style="width:100%;" onclick="unlock()">로그인</button>
+      <div id="lock-error" style="color:var(--danger); margin-top:12px; font-size:13px; display:none;">비밀번호가 틀립니다.</div>
+    </div>
+  </div>
+</div>
+
+<div id="app-main" style="display:none;">
+<nav class="nav">
+  <div class="nav-brand">🚲 삼천리자전거 비산점</div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('dashboard')">대시보드</button>
+    <button class="nav-tab" onclick="showPage('customers')">고객관리</button>
+    <button class="nav-tab" onclick="showPage('sales')">판매기록</button>
+    <button class="nav-tab" onclick="showPage('visits')">방문기록</button>
+    <button class="nav-tab" onclick="showPage('journal')">업무일지</button>
+    <button class="nav-tab" onclick="showPage('stats')">통계</button>
+    <button class="nav-tab" onclick="showPage('settings')">설정</button>
+  </div>
+</nav>
+
+<div class="container">
+
+<!-- ==================== 대시보드 ==================== -->
+<div id="page-dashboard" class="page active">
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="stat-value" id="stat-today-sales">0</div>
+      <div class="stat-label">오늘 판매 건수</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="stat-today-revenue">0원</div>
+      <div class="stat-label">오늘 매출</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="stat-today-visits">0</div>
+      <div class="stat-label">오늘 방문 고객</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="stat-total-customers">0</div>
+      <div class="stat-label">전체 고객 수</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">최근 판매</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>날짜</th><th>고객</th><th>모델명</th><th>금액</th><th>결제</th></tr></thead>
+        <tbody id="dashboard-recent-sales"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">최근 방문</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>날짜</th><th>고객</th><th>목적</th><th>메모</th></tr></thead>
+        <tbody id="dashboard-recent-visits"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 고객관리 ==================== -->
+<div id="page-customers" class="page">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">고객 등록</div>
+    </div>
+    <div class="form-row">
+      <div class="form-group flex1"><label>이름 *</label><input type="text" id="cust-name"></div>
+      <div class="form-group flex1"><label>연락처</label><input type="text" id="cust-phone" placeholder="010-0000-0000"></div>
+      <div class="form-group flex1"><label>주소</label><input type="text" id="cust-address"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group flex1"><label>메모</label><input type="text" id="cust-memo" placeholder="특이사항"></div>
+      <div class="form-group" style="justify-content:flex-end"><label>&nbsp;</label><button class="btn btn-primary" onclick="saveCustomer()">등록</button></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">고객 목록</div>
+    </div>
+    <div class="search-box">
+      <input type="text" id="cust-search" placeholder="이름, 연락처, 주소로 검색..." oninput="renderCustomers()">
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>이름</th><th>연락처</th><th>주소</th><th>메모</th><th>등록일</th><th>관리</th></tr></thead>
+        <tbody id="customer-list"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 판매기록 ==================== -->
+<div id="page-sales" class="page">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">판매 등록</div>
+    </div>
+    <div class="form-row">
+      <div class="form-group flex1"><label>날짜 *</label><input type="date" id="sale-date"></div>
+      <div class="form-group flex1"><label>고객명 *</label><input type="text" id="sale-customer" placeholder="이름 입력 (자동완성)" oninput="showCustomerSuggestions(this, 'sale-cust-suggest')"><div id="sale-cust-suggest" class="suggest-list"></div></div>
+      <div class="form-group flex1"><label>자전거 모델 *</label><input type="text" id="sale-model" placeholder="모델명"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group flex1"><label>판매가격 *</label><input type="number" id="sale-price" placeholder="0"></div>
+      <div class="form-group flex1">
+        <label>결제방식</label>
+        <select id="sale-payment"><option value="현금">현금</option><option value="카드">카드</option><option value="계좌이체">계좌이체</option></select>
+      </div>
+      <div class="form-group flex1"><label>메모</label><input type="text" id="sale-memo"></div>
+      <div class="form-group" style="justify-content:flex-end"><label>&nbsp;</label><button class="btn btn-primary" onclick="saveSale()">등록</button></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">판매 내역</div>
+    </div>
+    <div class="search-box">
+      <input type="text" id="sale-search" placeholder="고객명, 모델명으로 검색..." oninput="renderSales()">
+      <input type="month" id="sale-month" onchange="renderSales()">
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>날짜</th><th>고객</th><th>모델명</th><th class="text-right">금액</th><th>결제</th><th>메모</th><th>관리</th></tr></thead>
+        <tbody id="sales-list"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 방문기록 ==================== -->
+<div id="page-visits" class="page">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">방문 등록</div>
+    </div>
+    <div class="form-row">
+      <div class="form-group flex1"><label>날짜 *</label><input type="date" id="visit-date"></div>
+      <div class="form-group flex1"><label>고객명 *</label><input type="text" id="visit-customer" placeholder="이름 입력 (자동완성)" oninput="showCustomerSuggestions(this, 'visit-cust-suggest')"><div id="visit-cust-suggest" class="suggest-list"></div></div>
+      <div class="form-group flex1">
+        <label>방문 목적</label>
+        <select id="visit-purpose"><option value="구매">구매</option><option value="수리">수리</option><option value="상담">상담</option><option value="픽업">픽업</option><option value="기타">기타</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group flex1"><label>메모</label><input type="text" id="visit-memo"></div>
+      <div class="form-group" style="justify-content:flex-end"><label>&nbsp;</label><button class="btn btn-primary" onclick="saveVisit()">등록</button></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">방문 내역</div>
+    </div>
+    <div class="search-box">
+      <input type="text" id="visit-search" placeholder="고객명, 목적으로 검색..." oninput="renderVisits()">
+      <input type="month" id="visit-month" onchange="renderVisits()">
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>날짜</th><th>고객</th><th>목적</th><th>메모</th><th>관리</th></tr></thead>
+        <tbody id="visits-list"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 업무일지 ==================== -->
+<div id="page-journal" class="page">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">업무일지 작성</div>
+    </div>
+    <div class="form-row">
+      <div class="form-group flex1"><label>날짜 *</label><input type="date" id="journal-date"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group flex1"><label>업무 내용</label><textarea id="journal-content" placeholder="오늘 업무 내용을 자유롭게 작성하세요..."></textarea></div>
+    </div>
+
+    <div style="margin-bottom:12px;">
+      <label style="font-size:12px; font-weight:600; color:var(--text-light); display:block; margin-bottom:8px;">고객 첨부</label>
+      <div class="form-row">
+        <div class="form-group flex1"><label>고객명</label><input type="text" id="journal-cust-name" placeholder="이름" oninput="showCustomerSuggestions(this, 'journal-cust-suggest')"><div id="journal-cust-suggest" class="suggest-list"></div></div>
+        <div class="form-group flex1"><label>연락처</label><input type="text" id="journal-cust-phone" placeholder="010-0000-0000"></div>
+        <div class="form-group flex1">
+          <label>방문 목적</label>
+          <select id="journal-cust-purpose"><option value="구매">구매</option><option value="수리">수리</option><option value="상담">상담</option><option value="픽업">픽업</option><option value="기타">기타</option></select>
+        </div>
+        <div class="form-group flex1"><label>메모</label><input type="text" id="journal-cust-memo" placeholder="간단 메모"></div>
+        <div class="form-group" style="justify-content:flex-end"><label>&nbsp;</label><button class="btn btn-outline" onclick="addJournalCustomer()">+ 추가</button></div>
+      </div>
+      <div id="journal-attached-customers"></div>
+    </div>
+
+    <button class="btn btn-primary" onclick="saveJournal()">저장</button>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">일지 목록</div>
+    </div>
+    <div class="search-box">
+      <input type="text" id="journal-search" placeholder="내용 검색..." oninput="renderJournals()">
+      <input type="month" id="journal-month" onchange="renderJournals()">
+    </div>
+    <div id="journal-list"></div>
+  </div>
+</div>
+
+<!-- ==================== 통계 ==================== -->
+<div id="page-stats" class="page">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">월별 통계</div>
+      <div>
+        <input type="month" id="stats-month" onchange="renderStats()">
+      </div>
+    </div>
+    <div class="stat-grid" id="stats-monthly-summary"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">모델별 판매 현황</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>모델명</th><th class="text-right">판매 수량</th><th class="text-right">총 매출</th></tr></thead>
+        <tbody id="stats-model-table"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">결제 방식별 현황</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>결제 방식</th><th class="text-right">건수</th><th class="text-right">총 금액</th></tr></thead>
+        <tbody id="stats-payment-table"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">방문 목적별 현황</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>목적</th><th class="text-right">건수</th></tr></thead>
+        <tbody id="stats-visit-table"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 설정 ==================== -->
+<div id="page-settings" class="page">
+  <div class="card">
+    <div class="card-title">데이터 백업/복원</div>
+    <p style="color:var(--text-light); margin-bottom: 16px;">데이터를 JSON 파일로 내보내거나, 이전에 내보낸 파일을 가져와 복원할 수 있습니다.</p>
+    <div class="toolbar">
+      <button class="btn btn-success" onclick="exportData()">📥 데이터 내보내기 (백업)</button>
+      <button class="btn btn-warning" onclick="document.getElementById('import-file').click()">📤 데이터 가져오기 (복원)</button>
+      <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">데이터 현황</div>
+    <div id="data-summary"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">전체 데이터 검색</div>
+    <div class="search-box">
+      <input type="text" id="global-search" placeholder="모든 데이터에서 검색..." oninput="globalSearch()">
+    </div>
+    <div id="global-search-results"></div>
+  </div>
+
+  <div class="card" style="border-color: var(--danger);">
+    <div class="card-title" style="color: var(--danger); border-color: var(--danger);">위험 영역</div>
+    <p style="color:var(--text-light); margin-bottom: 16px;">모든 데이터가 삭제됩니다. 이 작업은 되돌릴 수 없습니다.</p>
+    <button class="btn btn-danger" onclick="clearAllData()">전체 데이터 삭제</button>
+  </div>
+</div>
+
+</div>
+
+<!-- 고객 수정 모달 -->
+<div class="modal-overlay" id="modal-edit-customer">
+  <div class="modal">
+    <div class="modal-title">고객 정보 수정</div>
+    <input type="hidden" id="edit-cust-id">
+    <div class="form-row"><div class="form-group flex1"><label>이름</label><input type="text" id="edit-cust-name"></div></div>
+    <div class="form-row"><div class="form-group flex1"><label>연락처</label><input type="text" id="edit-cust-phone"></div></div>
+    <div class="form-row"><div class="form-group flex1"><label>주소</label><input type="text" id="edit-cust-address"></div></div>
+    <div class="form-row"><div class="form-group flex1"><label>메모</label><input type="text" id="edit-cust-memo"></div></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('modal-edit-customer')">취소</button>
+      <button class="btn btn-primary" onclick="updateCustomer()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 판매 수정 모달 -->
+<div class="modal-overlay" id="modal-edit-sale">
+  <div class="modal">
+    <div class="modal-title">판매 정보 수정</div>
+    <input type="hidden" id="edit-sale-id">
+    <div class="form-row"><div class="form-group flex1"><label>날짜</label><input type="date" id="edit-sale-date"></div></div>
+    <div class="form-row"><div class="form-group flex1"><label>고객명</label><input type="text" id="edit-sale-customer"></div></div>
+    <div class="form-row"><div class="form-group flex1"><label>모델명</label><input type="text" id="edit-sale-model"></div></div>
+    <div class="form-row"><div class="form-group flex1"><label>판매가격</label><input type="number" id="edit-sale-price"></div></div>
+    <div class="form-row">
+      <div class="form-group flex1"><label>결제방식</label><select id="edit-sale-payment"><option value="현금">현금</option><option value="카드">카드</option><option value="계좌이체">계좌이체</option></select></div>
+    </div>
+    <div class="form-row"><div class="form-group flex1"><label>메모</label><input type="text" id="edit-sale-memo"></div></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('modal-edit-sale')">취소</button>
+      <button class="btn btn-primary" onclick="updateSale()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 방문 수정 모달 -->
+<div class="modal-overlay" id="modal-edit-visit">
+  <div class="modal">
+    <div class="modal-title">방문 정보 수정</div>
+    <input type="hidden" id="edit-visit-id">
+    <div class="form-row"><div class="form-group flex1"><label>날짜</label><input type="date" id="edit-visit-date"></div></div>
+    <div class="form-row"><div class="form-group flex1"><label>고객명</label><input type="text" id="edit-visit-customer"></div></div>
+    <div class="form-row">
+      <div class="form-group flex1"><label>방문 목적</label><select id="edit-visit-purpose"><option value="구매">구매</option><option value="수리">수리</option><option value="상담">상담</option><option value="픽업">픽업</option><option value="기타">기타</option></select></div>
+    </div>
+    <div class="form-row"><div class="form-group flex1"><label>메모</label><input type="text" id="edit-visit-memo"></div></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('modal-edit-visit')">취소</button>
+      <button class="btn btn-primary" onclick="updateVisit()">저장</button>
+    </div>
+  </div>
+</div>
+</div><!-- app-main 닫기 -->
+
+<style>
+.suggest-list { position: absolute; background: white; border: 1px solid var(--border); border-radius: 6px; max-height: 150px; overflow-y: auto; z-index: 50; display: none; width: 100%; }
+.suggest-list.active { display: block; }
+.suggest-item { padding: 8px 12px; cursor: pointer; font-size: 13px; }
+.suggest-item:hover { background: var(--primary-light); }
+.form-group { position: relative; }
+</style>
+
+<script>
+// Firebase 설정
+const firebaseConfig = {
+  apiKey: "AIzaSyAczvwEUel6GEZYabelGDiD1M-kxrE_0_4",
+  authDomain: "samchunli-bisan.firebaseapp.com",
+  projectId: "samchunli-bisan",
+  storageBucket: "samchunli-bisan.firebasestorage.app",
+  messagingSenderId: "543943831333",
+  appId: "1:543943831333:web:e195a8bd84668764d174cc"
+};
+firebase.initializeApp(firebaseConfig);
+const fsDb = firebase.firestore();
+
+// 메모리 캐시
+const cache = { customers: null, sales: null, visits: null, journals: null };
+
+async function load(key) {
+  if (cache[key]) return cache[key];
+  const snap = await fsDb.collection(key).get();
+  cache[key] = snap.docs.map(doc => ({ ...doc.data() }));
+  return cache[key];
+}
+
+async function save(key, data) {
+  cache[key] = data;
+  const batch = fsDb.batch();
+  const existing = await fsDb.collection(key).get();
+  existing.docs.forEach(doc => batch.delete(doc.ref));
+  data.forEach(item => {
+    const docRef = fsDb.collection(key).doc(item.id || genId());
+    const clean = Object.assign({}, item);
+    delete clean._docId;
+    batch.set(docRef, clean);
+  });
+  await batch.commit();
+}
+
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function today() { return new Date().toISOString().slice(0, 10); }
+function thisMonth() { return new Date().toISOString().slice(0, 7); }
+function formatMoney(n) { return Number(n).toLocaleString('ko-KR') + '원'; }
+function formatDate(d) { if (!d) return ''; const dt = new Date(d + 'T00:00:00'); const days = ['일','월','화','수','목','금','토']; return d + ' (' + days[dt.getDay()] + ')'; }
+
+// ==================== 비밀번호 ====================
+async function hashPw(pw) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function setupPassword() {
+  const pw = document.getElementById('pw-new').value;
+  const confirm = document.getElementById('pw-confirm').value;
+  if (pw.length < 4) return alert('비밀번호는 4자 이상이어야 합니다.');
+  if (pw !== confirm) return alert('비밀번호가 일치하지 않습니다.');
+  const hashed = await hashPw(pw);
+  await fsDb.collection('_config').doc('auth').set({ passwordHash: hashed });
+  document.getElementById('lock-screen').style.display = 'none';
+  document.getElementById('app-main').style.display = 'block';
+  initApp();
+}
+
+async function unlock() {
+  const pw = document.getElementById('pw-input').value;
+  const hashed = await hashPw(pw);
+  const doc = await fsDb.collection('_config').doc('auth').get();
+  if (doc.exists && doc.data().passwordHash === hashed) {
+    document.getElementById('lock-screen').style.display = 'none';
+    document.getElementById('app-main').style.display = 'block';
+    document.getElementById('lock-error').style.display = 'none';
+    initApp();
+  } else {
+    document.getElementById('lock-error').style.display = 'block';
+  }
+}
+
+async function checkAuth() {
+  document.getElementById('lock-screen').style.display = 'flex';
+  try {
+    const doc = await fsDb.collection('_config').doc('auth').get();
+    if (doc.exists && doc.data().passwordHash) {
+      document.getElementById('lock-login').style.display = 'block';
+      document.getElementById('pw-input').focus();
+    } else {
+      document.getElementById('lock-setup').style.display = 'block';
+      document.getElementById('pw-new').focus();
+    }
+  } catch (e) {
+    document.getElementById('lock-setup').style.display = 'block';
+  }
+}
+
+// ==================== 페이지 ====================
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  const labels = { dashboard:'대시보드', customers:'고객관리', sales:'판매기록', visits:'방문기록', journal:'업무일지', stats:'통계', settings:'설정' };
+  document.querySelectorAll('.nav-tab').forEach(t => { if (t.textContent.trim() === labels[name]) t.classList.add('active'); });
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'customers') renderCustomers();
+  if (name === 'sales') renderSales();
+  if (name === 'visits') renderVisits();
+  if (name === 'journal') renderJournals();
+  if (name === 'stats') renderStats();
+  if (name === 'settings') renderSettings();
+}
+
+function openModal(id) { document.getElementById(id).classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+// ==================== 고객 ====================
+async function saveCustomer() {
+  const name = document.getElementById('cust-name').value.trim();
+  if (!name) return alert('고객 이름을 입력하세요.');
+  const customers = await load('customers');
+  customers.push({ id: genId(), name, phone: document.getElementById('cust-phone').value.trim(), address: document.getElementById('cust-address').value.trim(), memo: document.getElementById('cust-memo').value.trim(), createdAt: today() });
+  await save('customers', customers);
+  document.getElementById('cust-name').value = '';
+  document.getElementById('cust-phone').value = '';
+  document.getElementById('cust-address').value = '';
+  document.getElementById('cust-memo').value = '';
+  renderCustomers();
+}
+
+async function renderCustomers() {
+  const q = (document.getElementById('cust-search')?.value || '').toLowerCase();
+  let customers = await load('customers');
+  if (q) customers = customers.filter(c => (c.name + c.phone + c.address + c.memo).toLowerCase().includes(q));
+  const tbody = document.getElementById('customer-list');
+  if (!customers.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><p>등록된 고객이 없습니다.</p></td></tr>'; return; }
+  tbody.innerHTML = customers.map(c => `<tr>
+    <td><strong>${esc(c.name)}</strong></td><td>${esc(c.phone)}</td><td>${esc(c.address)}</td><td>${esc(c.memo)}</td><td>${c.createdAt}</td>
+    <td><button class="btn btn-sm btn-outline" onclick="editCustomer('${c.id}')">수정</button> <button class="btn btn-sm btn-danger" onclick="deleteCustomer('${c.id}')">삭제</button></td>
+  </tr>`).join('');
+}
+
+async function editCustomer(id) {
+  const c = (await load('customers')).find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('edit-cust-id').value = c.id;
+  document.getElementById('edit-cust-name').value = c.name;
+  document.getElementById('edit-cust-phone').value = c.phone;
+  document.getElementById('edit-cust-address').value = c.address;
+  document.getElementById('edit-cust-memo').value = c.memo;
+  openModal('modal-edit-customer');
+}
+
+async function updateCustomer() {
+  const id = document.getElementById('edit-cust-id').value;
+  const customers = await load('customers');
+  const idx = customers.findIndex(c => c.id === id);
+  if (idx === -1) return;
+  customers[idx].name = document.getElementById('edit-cust-name').value.trim();
+  customers[idx].phone = document.getElementById('edit-cust-phone').value.trim();
+  customers[idx].address = document.getElementById('edit-cust-address').value.trim();
+  customers[idx].memo = document.getElementById('edit-cust-memo').value.trim();
+  await save('customers', customers);
+  closeModal('modal-edit-customer');
+  renderCustomers();
+}
+
+async function deleteCustomer(id) {
+  if (!confirm('이 고객을 삭제하시겠습니까?')) return;
+  await save('customers', (await load('customers')).filter(c => c.id !== id));
+  renderCustomers();
+}
+
+// ==================== 판매 ====================
+async function saveSale() {
+  const date = document.getElementById('sale-date').value;
+  const customer = document.getElementById('sale-customer').value.trim();
+  const model = document.getElementById('sale-model').value.trim();
+  const price = document.getElementById('sale-price').value;
+  if (!date || !customer || !model || !price) return alert('날짜, 고객명, 모델명, 가격을 입력하세요.');
+  const sales = await load('sales');
+  sales.push({ id: genId(), date, customer, model, price: Number(price), payment: document.getElementById('sale-payment').value, memo: document.getElementById('sale-memo').value.trim() });
+  await save('sales', sales);
+  document.getElementById('sale-customer').value = '';
+  document.getElementById('sale-model').value = '';
+  document.getElementById('sale-price').value = '';
+  document.getElementById('sale-memo').value = '';
+  renderSales();
+}
+
+async function renderSales() {
+  const q = (document.getElementById('sale-search')?.value || '').toLowerCase();
+  const month = document.getElementById('sale-month')?.value || '';
+  let sales = await load('sales');
+  if (q) sales = sales.filter(s => (s.customer + s.model + s.memo).toLowerCase().includes(q));
+  if (month) sales = sales.filter(s => s.date.startsWith(month));
+  sales.sort((a, b) => b.date.localeCompare(a.date));
+  const tbody = document.getElementById('sales-list');
+  if (!sales.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><p>판매 기록이 없습니다.</p></td></tr>'; return; }
+  const payBadge = p => ({ '현금':'badge-cash','카드':'badge-card','계좌이체':'badge-transfer' }[p] || '');
+  tbody.innerHTML = sales.map(s => `<tr>
+    <td>${formatDate(s.date)}</td><td>${esc(s.customer)}</td><td>${esc(s.model)}</td>
+    <td class="text-right"><strong>${formatMoney(s.price)}</strong></td>
+    <td><span class="badge ${payBadge(s.payment)}">${esc(s.payment)}</span></td>
+    <td>${esc(s.memo)}</td>
+    <td><button class="btn btn-sm btn-outline" onclick="editSale('${s.id}')">수정</button> <button class="btn btn-sm btn-danger" onclick="deleteSale('${s.id}')">삭제</button></td>
+  </tr>`).join('');
+}
+
+async function editSale(id) {
+  const s = (await load('sales')).find(x => x.id === id);
+  if (!s) return;
+  document.getElementById('edit-sale-id').value = s.id;
+  document.getElementById('edit-sale-date').value = s.date;
+  document.getElementById('edit-sale-customer').value = s.customer;
+  document.getElementById('edit-sale-model').value = s.model;
+  document.getElementById('edit-sale-price').value = s.price;
+  document.getElementById('edit-sale-payment').value = s.payment;
+  document.getElementById('edit-sale-memo').value = s.memo;
+  openModal('modal-edit-sale');
+}
+
+async function updateSale() {
+  const id = document.getElementById('edit-sale-id').value;
+  const sales = await load('sales');
+  const idx = sales.findIndex(s => s.id === id);
+  if (idx === -1) return;
+  sales[idx].date = document.getElementById('edit-sale-date').value;
+  sales[idx].customer = document.getElementById('edit-sale-customer').value.trim();
+  sales[idx].model = document.getElementById('edit-sale-model').value.trim();
+  sales[idx].price = Number(document.getElementById('edit-sale-price').value);
+  sales[idx].payment = document.getElementById('edit-sale-payment').value;
+  sales[idx].memo = document.getElementById('edit-sale-memo').value.trim();
+  await save('sales', sales);
+  closeModal('modal-edit-sale');
+  renderSales();
+}
+
+async function deleteSale(id) {
+  if (!confirm('이 판매 기록을 삭제하시겠습니까?')) return;
+  await save('sales', (await load('sales')).filter(s => s.id !== id));
+  renderSales();
+}
+
+// ==================== 방문 ====================
+async function saveVisit() {
+  const date = document.getElementById('visit-date').value;
+  const customer = document.getElementById('visit-customer').value.trim();
+  if (!date || !customer) return alert('날짜와 고객명을 입력하세요.');
+  const visits = await load('visits');
+  visits.push({ id: genId(), date, customer, purpose: document.getElementById('visit-purpose').value, memo: document.getElementById('visit-memo').value.trim() });
+  await save('visits', visits);
+  document.getElementById('visit-customer').value = '';
+  document.getElementById('visit-memo').value = '';
+  renderVisits();
+}
+
+async function renderVisits() {
+  const q = (document.getElementById('visit-search')?.value || '').toLowerCase();
+  const month = document.getElementById('visit-month')?.value || '';
+  let visits = await load('visits');
+  if (q) visits = visits.filter(v => (v.customer + v.purpose + v.memo).toLowerCase().includes(q));
+  if (month) visits = visits.filter(v => v.date.startsWith(month));
+  visits.sort((a, b) => b.date.localeCompare(a.date));
+  const tbody = document.getElementById('visits-list');
+  if (!visits.length) { tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><p>방문 기록이 없습니다.</p></td></tr>'; return; }
+  const purposeBadge = p => ({ '구매':'badge-purchase','수리':'badge-repair','상담':'badge-consult','픽업':'badge-pickup' }[p] || 'badge-other');
+  tbody.innerHTML = visits.map(v => `<tr>
+    <td>${formatDate(v.date)}</td><td>${esc(v.customer)}</td>
+    <td><span class="badge ${purposeBadge(v.purpose)}">${esc(v.purpose)}</span></td>
+    <td>${esc(v.memo)}</td>
+    <td><button class="btn btn-sm btn-outline" onclick="editVisit('${v.id}')">수정</button> <button class="btn btn-sm btn-danger" onclick="deleteVisit('${v.id}')">삭제</button></td>
+  </tr>`).join('');
+}
+
+async function editVisit(id) {
+  const v = (await load('visits')).find(x => x.id === id);
+  if (!v) return;
+  document.getElementById('edit-visit-id').value = v.id;
+  document.getElementById('edit-visit-date').value = v.date;
+  document.getElementById('edit-visit-customer').value = v.customer;
+  document.getElementById('edit-visit-purpose').value = v.purpose;
+  document.getElementById('edit-visit-memo').value = v.memo;
+  openModal('modal-edit-visit');
+}
+
+async function updateVisit() {
+  const id = document.getElementById('edit-visit-id').value;
+  const visits = await load('visits');
+  const idx = visits.findIndex(v => v.id === id);
+  if (idx === -1) return;
+  visits[idx].date = document.getElementById('edit-visit-date').value;
+  visits[idx].customer = document.getElementById('edit-visit-customer').value.trim();
+  visits[idx].purpose = document.getElementById('edit-visit-purpose').value;
+  visits[idx].memo = document.getElementById('edit-visit-memo').value.trim();
+  await save('visits', visits);
+  closeModal('modal-edit-visit');
+  renderVisits();
+}
+
+async function deleteVisit(id) {
+  if (!confirm('이 방문 기록을 삭제하시겠습니까?')) return;
+  await save('visits', (await load('visits')).filter(v => v.id !== id));
+  renderVisits();
+}
+
+// ==================== 업무일지 ====================
+let journalAttachedCustomers = [];
+
+function addJournalCustomer() {
+  const name = document.getElementById('journal-cust-name').value.trim();
+  if (!name) return alert('고객명을 입력하세요.');
+  const phone = document.getElementById('journal-cust-phone').value.trim();
+  const purpose = document.getElementById('journal-cust-purpose').value;
+  const memo = document.getElementById('journal-cust-memo').value.trim();
+  journalAttachedCustomers.push({ name, phone, purpose, memo });
+  document.getElementById('journal-cust-name').value = '';
+  document.getElementById('journal-cust-phone').value = '';
+  document.getElementById('journal-cust-memo').value = '';
+  renderAttachedCustomers();
+}
+
+function removeJournalCustomer(idx) {
+  journalAttachedCustomers.splice(idx, 1);
+  renderAttachedCustomers();
+}
+
+function renderAttachedCustomers() {
+  const container = document.getElementById('journal-attached-customers');
+  if (!journalAttachedCustomers.length) { container.innerHTML = ''; return; }
+  const purposeBadge = p => ({ '구매':'badge-purchase','수리':'badge-repair','상담':'badge-consult','픽업':'badge-pickup' }[p] || 'badge-other');
+  container.innerHTML = '<div class="attached-cust-list">' + journalAttachedCustomers.map((c, i) =>
+    `<div class="attached-cust-tag">
+      <strong>${esc(c.name)}</strong>
+      ${c.phone ? '<span style="color:var(--text-light)">' + esc(c.phone) + '</span>' : ''}
+      <span class="badge ${purposeBadge(c.purpose)}">${esc(c.purpose)}</span>
+      ${c.memo ? '<span style="color:var(--text-light)">' + esc(c.memo) + '</span>' : ''}
+      <span class="remove-tag" onclick="removeJournalCustomer(${i})">×</span>
+    </div>`
+  ).join('') + '</div>';
+}
+
+async function autoRegisterCustomers(attachedList) {
+  const customers = await load('customers');
+  let newCount = 0;
+  attachedList.forEach(ac => {
+    const exists = customers.some(c => c.name === ac.name && ((!c.phone && !ac.phone) || c.phone === ac.phone));
+    if (!exists) {
+      customers.push({ id: genId(), name: ac.name, phone: ac.phone || '', address: '', memo: ac.memo || '', createdAt: today() });
+      newCount++;
+    }
+  });
+  if (newCount > 0) await save('customers', customers);
+  return newCount;
+}
+
+async function saveJournal() {
+  const date = document.getElementById('journal-date').value;
+  const content = document.getElementById('journal-content').value.trim();
+  if (!date || !content) return alert('날짜와 내용을 입력하세요.');
+
+  const attached = [...journalAttachedCustomers];
+  let newCustCount = 0;
+  if (attached.length) {
+    newCustCount = await autoRegisterCustomers(attached);
+    const visits = await load('visits');
+    attached.forEach(ac => {
+      visits.push({ id: genId(), date, customer: ac.name, purpose: ac.purpose, memo: ac.memo });
+    });
+    await save('visits', visits);
+  }
+
+  const journals = await load('journals');
+  const existing = journals.findIndex(j => j.date === date);
+  if (existing !== -1) {
+    if (!confirm('해당 날짜에 이미 일지가 있습니다. 덮어쓰시겠습니까?')) return;
+    journals[existing].content = content;
+    journals[existing].customers = attached;
+    journals[existing].updatedAt = new Date().toISOString();
+  } else {
+    journals.push({ id: genId(), date, content, customers: attached, createdAt: new Date().toISOString() });
+  }
+  await save('journals', journals);
+  document.getElementById('journal-content').value = '';
+  journalAttachedCustomers = [];
+  renderAttachedCustomers();
+
+  let msg = '저장 완료!';
+  if (newCustCount > 0) msg += ` (신규 고객 ${newCustCount}명 자동 등록)`;
+  if (attached.length) msg += ` / 방문기록 ${attached.length}건 추가`;
+  alert(msg);
+  renderJournals();
+}
+
+async function renderJournals() {
+  const q = (document.getElementById('journal-search')?.value || '').toLowerCase();
+  const month = document.getElementById('journal-month')?.value || '';
+  let journals = await load('journals');
+  if (q) journals = journals.filter(j => (j.content + (j.customers || []).map(c => c.name).join(' ')).toLowerCase().includes(q));
+  if (month) journals = journals.filter(j => j.date.startsWith(month));
+  journals.sort((a, b) => b.date.localeCompare(a.date));
+  const container = document.getElementById('journal-list');
+  if (!journals.length) { container.innerHTML = '<div class="empty-state"><p>작성된 일지가 없습니다.</p></div>'; return; }
+
+  const purposeBadge = p => ({ '구매':'badge-purchase','수리':'badge-repair','상담':'badge-consult','픽업':'badge-pickup' }[p] || 'badge-other');
+  const allSales = await load('sales');
+  const allVisits = await load('visits');
+
+  container.innerHTML = journals.map(j => {
+    const sales = allSales.filter(s => s.date === j.date);
+    const visits = allVisits.filter(v => v.date === j.date);
+    const revenue = sales.reduce((sum, s) => sum + s.price, 0);
+    let summary = '';
+    if (sales.length || visits.length) {
+      summary = `<div style="font-size:12px; color:var(--text-light); margin-top:8px;">📊 판매 ${sales.length}건 (${formatMoney(revenue)}) | 방문 ${visits.length}건</div>`;
+    }
+    let custHtml = '';
+    if (j.customers && j.customers.length) {
+      custHtml = `<div class="journal-customers">${j.customers.map(c =>
+        `<span class="journal-cust-badge">${esc(c.name)} <span class="badge ${purposeBadge(c.purpose)}" style="font-size:10px">${esc(c.purpose)}</span></span>`
+      ).join('')}</div>`;
+    }
+    return `<div class="daily-entry">
+      <div class="daily-entry-date">${formatDate(j.date)}</div>
+      <div class="daily-entry-content">${esc(j.content)}</div>
+      ${custHtml}
+      ${summary}
+      <div class="daily-entry-actions">
+        <button class="btn btn-sm btn-outline" onclick="editJournal('${j.date}')">수정</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteJournal('${j.id}')">삭제</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function editJournal(date) {
+  const j = (await load('journals')).find(x => x.date === date);
+  if (!j) return;
+  document.getElementById('journal-date').value = j.date;
+  document.getElementById('journal-content').value = j.content;
+  journalAttachedCustomers = j.customers ? [...j.customers] : [];
+  renderAttachedCustomers();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function deleteJournal(id) {
+  if (!confirm('이 일지를 삭제하시겠습니까?')) return;
+  await save('journals', (await load('journals')).filter(j => j.id !== id));
+  renderJournals();
+}
+
+// ==================== 대시보드 ====================
+async function renderDashboard() {
+  const t = today();
+  const sales = await load('sales');
+  const visits = await load('visits');
+  const todaySales = sales.filter(s => s.date === t);
+  const todayVisits = visits.filter(v => v.date === t);
+  const todayRevenue = todaySales.reduce((sum, s) => sum + s.price, 0);
+
+  document.getElementById('stat-today-sales').textContent = todaySales.length;
+  document.getElementById('stat-today-revenue').textContent = formatMoney(todayRevenue);
+  document.getElementById('stat-today-visits').textContent = todayVisits.length;
+  document.getElementById('stat-total-customers').textContent = (await load('customers')).length;
+
+  const recentSales = [...sales].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
+  const payBadge = p => ({ '현금':'badge-cash','카드':'badge-card','계좌이체':'badge-transfer' }[p] || '');
+  document.getElementById('dashboard-recent-sales').innerHTML = recentSales.length
+    ? recentSales.map(s => `<tr><td>${s.date}</td><td>${esc(s.customer)}</td><td>${esc(s.model)}</td><td class="text-right">${formatMoney(s.price)}</td><td><span class="badge ${payBadge(s.payment)}">${esc(s.payment)}</span></td></tr>`).join('')
+    : '<tr><td colspan="5" class="empty-state"><p>판매 기록이 없습니다.</p></td></tr>';
+
+  const recentVisits = [...visits].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
+  const purposeBadge = p => ({ '구매':'badge-purchase','수리':'badge-repair','상담':'badge-consult','픽업':'badge-pickup' }[p] || 'badge-other');
+  document.getElementById('dashboard-recent-visits').innerHTML = recentVisits.length
+    ? recentVisits.map(v => `<tr><td>${v.date}</td><td>${esc(v.customer)}</td><td><span class="badge ${purposeBadge(v.purpose)}">${esc(v.purpose)}</span></td><td>${esc(v.memo)}</td></tr>`).join('')
+    : '<tr><td colspan="4" class="empty-state"><p>방문 기록이 없습니다.</p></td></tr>';
+}
+
+// ==================== 통계 ====================
+async function renderStats() {
+  const month = document.getElementById('stats-month')?.value || thisMonth();
+  if (!document.getElementById('stats-month').value) document.getElementById('stats-month').value = month;
+
+  const sales = (await load('sales')).filter(s => s.date.startsWith(month));
+  const visits = (await load('visits')).filter(v => v.date.startsWith(month));
+  const totalRevenue = sales.reduce((sum, s) => sum + s.price, 0);
+
+  document.getElementById('stats-monthly-summary').innerHTML = `
+    <div class="stat-card"><div class="stat-value">${sales.length}</div><div class="stat-label">판매 건수</div></div>
+    <div class="stat-card"><div class="stat-value">${formatMoney(totalRevenue)}</div><div class="stat-label">총 매출</div></div>
+    <div class="stat-card"><div class="stat-value">${visits.length}</div><div class="stat-label">방문 건수</div></div>
+    <div class="stat-card"><div class="stat-value">${sales.length ? formatMoney(Math.round(totalRevenue / sales.length)) : '0원'}</div><div class="stat-label">건당 평균 매출</div></div>
+  `;
+
+  const modelMap = {};
+  sales.forEach(s => {
+    if (!modelMap[s.model]) modelMap[s.model] = { count: 0, total: 0 };
+    modelMap[s.model].count++;
+    modelMap[s.model].total += s.price;
+  });
+  const modelRows = Object.entries(modelMap).sort((a, b) => b[1].count - a[1].count);
+  document.getElementById('stats-model-table').innerHTML = modelRows.length
+    ? modelRows.map(([m, d]) => `<tr><td>${esc(m)}</td><td class="text-right">${d.count}대</td><td class="text-right">${formatMoney(d.total)}</td></tr>`).join('')
+    : '<tr><td colspan="3" class="empty-state"><p>데이터 없음</p></td></tr>';
+
+  const payMap = {};
+  sales.forEach(s => {
+    if (!payMap[s.payment]) payMap[s.payment] = { count: 0, total: 0 };
+    payMap[s.payment].count++;
+    payMap[s.payment].total += s.price;
+  });
+  document.getElementById('stats-payment-table').innerHTML = Object.entries(payMap).length
+    ? Object.entries(payMap).map(([p, d]) => `<tr><td>${esc(p)}</td><td class="text-right">${d.count}건</td><td class="text-right">${formatMoney(d.total)}</td></tr>`).join('')
+    : '<tr><td colspan="3" class="empty-state"><p>데이터 없음</p></td></tr>';
+
+  const purposeMap = {};
+  visits.forEach(v => { purposeMap[v.purpose] = (purposeMap[v.purpose] || 0) + 1; });
+  document.getElementById('stats-visit-table').innerHTML = Object.entries(purposeMap).length
+    ? Object.entries(purposeMap).sort((a, b) => b[1] - a[1]).map(([p, c]) => `<tr><td>${esc(p)}</td><td class="text-right">${c}건</td></tr>`).join('')
+    : '<tr><td colspan="2" class="empty-state"><p>데이터 없음</p></td></tr>';
+}
+
+// ==================== 전체 검색 ====================
+async function globalSearch() {
+  const q = document.getElementById('global-search').value.trim().toLowerCase();
+  const container = document.getElementById('global-search-results');
+  if (!q) { container.innerHTML = ''; return; }
+
+  let results = [];
+  (await load('customers')).forEach(c => {
+    if ((c.name + c.phone + c.address + c.memo).toLowerCase().includes(q))
+      results.push({ type: '고객', main: c.name, sub: [c.phone, c.address, c.memo].filter(Boolean).join(' / ') });
+  });
+  (await load('sales')).forEach(s => {
+    if ((s.customer + s.model + s.memo + s.date).toLowerCase().includes(q))
+      results.push({ type: '판매', main: `${s.date} - ${s.customer}`, sub: `${s.model} / ${formatMoney(s.price)}` });
+  });
+  (await load('visits')).forEach(v => {
+    if ((v.customer + v.purpose + v.memo + v.date).toLowerCase().includes(q))
+      results.push({ type: '방문', main: `${v.date} - ${v.customer}`, sub: `${v.purpose} ${v.memo}` });
+  });
+  (await load('journals')).forEach(j => {
+    if (j.content.toLowerCase().includes(q))
+      results.push({ type: '일지', main: j.date, sub: j.content.substring(0, 100) });
+  });
+
+  if (!results.length) { container.innerHTML = '<div class="empty-state"><p>검색 결과가 없습니다.</p></div>'; return; }
+  container.innerHTML = '<table><thead><tr><th>구분</th><th>내용</th><th>상세</th></tr></thead><tbody>' +
+    results.map(r => `<tr><td><span class="badge badge-other">${r.type}</span></td><td><strong>${esc(r.main)}</strong></td><td>${esc(r.sub)}</td></tr>`).join('') +
+    '</tbody></table>';
+}
+
+// ==================== 고객 자동완성 ====================
+async function showCustomerSuggestions(input, listId) {
+  const q = input.value.trim().toLowerCase();
+  const list = document.getElementById(listId);
+  if (!q) { list.classList.remove('active'); return; }
+  const customers = (await load('customers')).filter(c => c.name.toLowerCase().includes(q));
+  if (!customers.length) { list.classList.remove('active'); return; }
+  list.innerHTML = customers.slice(0, 5).map(c => `<div class="suggest-item" onmousedown="selectCustomer(this, '${listId}')">${esc(c.name)} <span style="color:var(--text-light)">${esc(c.phone)}</span></div>`).join('');
+  list.classList.add('active');
+}
+
+function selectCustomer(el, listId) {
+  const name = el.textContent.trim().split(' ')[0];
+  const list = document.getElementById(listId);
+  list.previousElementSibling.value = name;
+  list.classList.remove('active');
+}
+
+document.addEventListener('click', () => document.querySelectorAll('.suggest-list').forEach(l => l.classList.remove('active')));
+
+// ==================== 설정 ====================
+async function renderSettings() {
+  const customers = await load('customers');
+  const sales = await load('sales');
+  const visits = await load('visits');
+  const journals = await load('journals');
+  document.getElementById('data-summary').innerHTML = `
+    <table><tbody>
+      <tr><td>고객 수</td><td class="text-right"><strong>${customers.length}명</strong></td></tr>
+      <tr><td>판매 기록</td><td class="text-right"><strong>${sales.length}건</strong></td></tr>
+      <tr><td>방문 기록</td><td class="text-right"><strong>${visits.length}건</strong></td></tr>
+      <tr><td>업무일지</td><td class="text-right"><strong>${journals.length}건</strong></td></tr>
+    </tbody></table>
+  `;
+}
+
+async function exportData() {
+  const data = { customers: await load('customers'), sales: await load('sales'), visits: await load('visits'), journals: await load('journals'), exportedAt: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `삼천리자전거_비산점_백업_${today()}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+async function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!confirm(`가져올 데이터:\n고객 ${(data.customers||[]).length}명\n판매 ${(data.sales||[]).length}건\n방문 ${(data.visits||[]).length}건\n일지 ${(data.journals||[]).length}건\n\n현재 데이터를 덮어쓰시겠습니까?`)) return;
+      if (data.customers) await save('customers', data.customers);
+      if (data.sales) await save('sales', data.sales);
+      if (data.visits) await save('visits', data.visits);
+      if (data.journals) await save('journals', data.journals);
+      alert('데이터를 성공적으로 가져왔습니다.');
+      renderDashboard();
+    } catch (err) { alert('파일을 읽을 수 없습니다. 올바른 백업 파일인지 확인하세요.'); }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+async function clearAllData() {
+  if (!confirm('정말로 모든 데이터를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) return;
+  if (!confirm('한 번 더 확인합니다. 정말 삭제하시겠습니까?')) return;
+  for (const key of ['customers', 'sales', 'visits', 'journals']) {
+    const snap = await fsDb.collection(key).get();
+    const batch = fsDb.batch();
+    snap.docs.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
+    cache[key] = [];
+  }
+  alert('모든 데이터가 삭제되었습니다.');
+  renderDashboard();
+}
+
+function esc(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+// ==================== 초기화 ====================
+function initApp() {
+  document.getElementById('sale-date').value = today();
+  document.getElementById('visit-date').value = today();
+  document.getElementById('journal-date').value = today();
+  renderDashboard();
+}
+
+checkAuth();
+</script>
+</body>
+</html>
